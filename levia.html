@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revia - Levia Field</title>
+    <!-- Favicon -->
+    <link rel="icon" href="faviconiki256x256.ico" sizes="256x256" type="image/x-icon">
+    <link rel="icon" href="faviconiki512x512.ico" sizes="512x512" type="image/x-icon">
+    <link rel="icon" href="faviconiki1024x1024.ico" sizes="1024x1024" type="image/x-icon">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Montserrat font (ana içerik için) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Metamorphous font (menü için) -->
+    <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        /* Menü fontu için özel stil */
+        .menu-font {
+            font-family: 'Metamorphous', cursive;
+        }
+        /* Custom Notification */
+        #customNotification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none; /* Allows clicks to pass through */
+        }
+        #customNotification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100 flex flex-col">
+
+    <!-- 1. Sitenin ilk 1920x1080 kısmı -->
+    <div
+        class="w-full h-screen bg-cover bg-center rounded-b-lg shadow-lg"
+        style="background-image: url(https://4kwallpapers.com/images/walls/thumbs_3t/10437.png)"
+    >
+        <!-- Menü sağ tarafta, dikey olarak -->
+        <nav class="flex items-center justify-end h-full text-white rounded-b-lg p-4 pr-12 w-full">
+            <ul class="flex flex-col space-y-6">
+                <li><a href="index.html" class="text-7xl font-bold hover:text-[#876347] transition-colors duration-300 menu-font">Code Field</a></li>
+                <li><a href="ikinci.html" class="text-7xl font-bold hover:text-[#876347] transition-colors duration-300 menu-font">Levia Field</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 2. Sitenin üstteki resmin altındaki forum alanı -->
+    <div class="flex-grow bg-[#41322f] p-4 md:p-8 flex flex-col items-center relative">
+        <div class="w-full max-w-4xl bg-white rounded-lg shadow-xl p-6">
+            <h2 class="text-4xl font-bold text-gray-800 mb-8 text-center menu-font">Levia Forum</h2>
+
+            <div class="flex justify-end items-center mb-6">
+                <button id="newTopicBtn" class="bg-[#7C3D1D] text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 transform hover:scale-105 hover:bg-[#876347]">
+                    Yeni Konu Oluştur
+                </button>
+            </div>
+
+            <!-- Arama Kutusu -->
+            <div class="mb-6">
+                <input
+                    type="text"
+                    id="searchQueryInput"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] transition duration-200"
+                    placeholder="Konu ara..."
+                />
+            </div>
+
+            <!-- Forum Konuları Listesi -->
+            <div id="forumTopicsList" class="space-y-6">
+                <!-- Konular buraya JavaScript tarafından eklenecek -->
+            </div>
+
+            <!-- Sayfalama Kontrolleri -->
+            <div id="paginationControls" class="flex justify-center mt-8 space-x-2">
+                <!-- Sayfa numaraları buraya JavaScript tarafından eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni Konu Oluştur / Konuyu Düzenle Modalı -->
+    <div id="newTopicModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative border-4 border-[#7C3D1D]">
+            <h3 id="modalTitle" class="text-3xl font-bold mb-6 text-gray-800 text-center">Yeni Konu Oluştur</h3>
+            <button id="closeNewTopicModalBtn"
+                class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-3xl font-bold"
+            >
+                &times;
+            </button>
+            <div class="mb-4">
+                <label for="nameInput" class="block text-gray-700 text-sm font-semibold mb-2">
+                    Adınız:
+                </label>
+                <input
+                    type="text"
+                    id="nameInput"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] transition duration-200"
+                    placeholder="Adınız"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="surnameInput" class="block text-gray-700 text-sm font-semibold mb-2">
+                    Soyadınız:
+                </label>
+                <input
+                    type="text"
+                    id="surnameInput"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] transition duration-200"
+                    placeholder="Soyadınız"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="topicTitleInput" class="block text-gray-700 text-sm font-semibold mb-2">
+                    Konu Başlığı:
+                </label>
+                <input
+                    type="text"
+                    id="topicTitleInput"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] transition duration-200"
+                    placeholder="Konu Başlığı"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="tagsInput" class="block text-gray-700 text-sm font-semibold mb-2">
+                    Etiketler (Virgülle Ayırın):
+                </label>
+                <input
+                    type="text"
+                    id="tagsInput"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] transition duration-200"
+                    placeholder="html, css, javascript"
+                />
+            </div>
+            <div class="mb-6">
+                <label for="topicContentInput" class="block text-gray-700 text-sm font-semibold mb-2">
+                    Konu İçeriği:
+                </label>
+                <textarea
+                    id="topicContentInput"
+                    rows="6"
+                    class="shadow-sm appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#7C3D1D] resize-y transition duration-200"
+                    placeholder="Konu içeriğini buraya yazın..."
+                ></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="submitTopicBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-md shadow-md transition duration-300 transform hover:scale-105"
+                >
+                    Gönder
+                </button>
+                <button id="cancelNewTopicBtn"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-md shadow-md transition duration-300 transform hover:scale-105"
+                >
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onay Modalı (window.confirm yerine) -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="confirmationModalTitle">Onay</h3>
+            <p class="mb-4 text-gray-700" id="confirmationModalMessage">Emin misiniz?</p>
+            <div class="flex justify-end gap-2">
+                <button id="confirmActionBtn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 transform hover:scale-105"
+                >
+                    Evet
+                </button>
+                <button id="cancelActionBtn"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 transform hover:scale-105"
+                >
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Element -->
+    <div id="customNotification" class="text-center"></div>
+
+    <script type="module">
+        // Firebase importları kaldırıldı
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // import { getFirestore, collection, addDoc, query, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase ile ilgili değişkenler kaldırıldı
+        // let app;
+        // let db;
+        // let auth;
+        // let userId = 'anonymous'; // Varsayılan veya geçici userId
+        // const ADMIN_USER_ID = 'YOUR_ADMIN_USER_ID'; // Yönetici ID'si kaldırıldı
+
+        let topics = []; // Forum konuları burada saklanacak
+        let currentPage = 1;
+        const topicsPerPage = 5; // Her sayfada gösterilecek konu sayısı
+        let searchQuery = ''; // Arama sorgusu
+        let isEditingTopic = false; // Konu düzenleniyor mu?
+        let editingTopicId = null; // Düzenlenen konunun ID'si
+        let nextTopicId = 1; // Yeni konular için ID sayacı
+
+        // DOM Elementleri
+        let forumTopicsList;
+        let paginationControls;
+        let newTopicBtn;
+        let newTopicModal;
+        let closeNewTopicModalBtn;
+        let nameInput;
+        let surnameInput;
+        let topicTitleInput;
+        let tagsInput; // Etiket giriş alanı
+        let topicContentInput;
+        let submitTopicBtn;
+        let cancelNewTopicBtn;
+        let customNotificationElement;
+        // let currentUserIdDisplay; // Kullanıcı ID gösterimi kaldırıldı
+        let searchQueryInput; // Arama kutusu
+        let modalTitle; // Modal başlığı
+
+        let confirmationModal;
+        let confirmationModalTitle;
+        let confirmationModalMessage;
+        let confirmActionBtn;
+        let cancelActionBtn;
+        let currentConfirmationCallback = null; // Onay modalı için callback
+
+        // Özel bildirim fonksiyonu
+        function showNotification(message, duration = 2000) {
+            if (!customNotificationElement) return;
+            customNotificationElement.textContent = message;
+            customNotificationElement.classList.add('show');
+            setTimeout(() => {
+                customNotificationElement.classList.remove('show');
+            }, duration);
+        }
+
+        // Özel onay modalını gösteren fonksiyon
+        function showConfirmationModal(title, message, onConfirm) {
+            confirmationModalTitle.textContent = title;
+            confirmationModalMessage.textContent = message;
+            confirmationModal.classList.remove('hidden');
+            currentConfirmationCallback = onConfirm;
+        }
+
+        // Özel onay modalını gizleyen fonksiyon
+        function hideConfirmationModal() {
+            confirmationModal.classList.add('hidden');
+            currentConfirmationCallback = null;
+        }
+
+        // Konuları localStorage'dan yükle
+        function loadTopicsFromLocalStorage() {
+            const storedTopics = localStorage.getItem('leviaForumTopics');
+            if (storedTopics) {
+                try {
+                    topics = JSON.parse(storedTopics);
+                    // nextTopicId'yi mevcut en yüksek ID'den bir fazla olarak ayarla
+                    nextTopicId = topics.length > 0 ? Math.max(...topics.map(t => parseInt(t.id))) + 1 : 1;
+                } catch (e) {
+                    console.error("Error parsing topics from localStorage:", e);
+                    topics = [];
+                    nextTopicId = 1;
+                }
+            } else {
+                topics = [];
+                nextTopicId = 1;
+            }
+            renderTopics(); // Konuları yükledikten sonra render et
+        }
+
+        // Konuları localStorage'a kaydet
+        function saveTopicsToLocalStorage() {
+            localStorage.setItem('leviaForumTopics', JSON.stringify(topics));
+        }
+
+        // Konuları render etme
+        function renderTopics() {
+            if (!forumTopicsList) return;
+
+            forumTopicsList.innerHTML = ''; // Mevcut konuları temizle
+
+            // Arama sorgusuna göre konuları filtrele
+            const filteredTopics = topics.filter(topic => {
+                const lowerCaseSearchQuery = searchQuery.toLowerCase();
+                const matchesText = topic.title.toLowerCase().includes(lowerCaseSearchQuery) ||
+                                    topic.content.toLowerCase().includes(lowerCaseSearchQuery) ||
+                                    topic.name.toLowerCase().includes(lowerCaseSearchQuery) ||
+                                    topic.surname.toLowerCase().includes(lowerCaseSearchQuery);
+
+                const matchesTags = topic.tags && topic.tags.some(tag => tag.toLowerCase().includes(lowerCaseSearchQuery));
+
+                return matchesText || matchesTags;
+            });
+
+            const totalPages = Math.ceil(filteredTopics.length / topicsPerPage);
+            // Geçerli sayfanın filtreleme sonrası geçerli olduğundan emin ol
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            } else if (totalPages === 0) {
+                currentPage = 1; // Konu yoksa 1. sayfaya sıfırla
+            }
+
+            const startIndex = (currentPage - 1) * topicsPerPage;
+            const endIndex = startIndex + topicsPerPage;
+            const topicsToDisplay = filteredTopics.slice(startIndex, endIndex);
+
+            if (topicsToDisplay.length === 0) {
+                forumTopicsList.innerHTML = '<p class="text-gray-500 text-center">Henüz bir konu yok veya arama kriterlerinize uygun konu bulunamadı.</p>';
+                renderPagination(totalPages); // Konu olmasa bile sayfalama kontrollerini göster
+                return;
+            }
+
+            topicsToDisplay.forEach(topic => {
+                const topicDiv = document.createElement('div');
+                topicDiv.className = 'bg-gray-100 p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col';
+
+                // Etiketleri HTML'e dönüştür
+                const tagsHtml = topic.tags && topic.tags.length > 0
+                    ? topic.tags.map(tag => `<span class="inline-block bg-gray-300 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full mr-1 mb-1">${tag}</span>`).join('')
+                    : '';
+
+                topicDiv.innerHTML = `
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-2">${topic.title}</h3>
+                    <p class="text-gray-700 mb-3 flex-grow">${topic.content.substring(0, 200)}${topic.content.length > 200 ? '...' : ''}</p>
+                    <div class="mb-2">${tagsHtml}</div> <!-- Etiketler buraya eklendi -->
+                    <div class="flex justify-between items-center text-sm text-gray-500 mt-auto">
+                        <span>Yazar: ${topic.name} ${topic.surname}</span>
+                        <span>Tarih: ${new Date(topic.timestamp).toLocaleDateString('tr-TR')}</span>
+                        <div class="flex space-x-2">
+                            <button data-topic-id="${topic.id}" class="edit-topic-btn bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1 px-2 rounded ml-4">Düzenle</button>
+                            <button data-topic-id="${topic.id}" class="delete-topic-btn bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-2 rounded">Sil</button>
+                        </div>
+                    </div>
+                `;
+                forumTopicsList.appendChild(topicDiv);
+            });
+
+            // Düzenle butonlarına olay dinleyicisi ekle
+            document.querySelectorAll('.edit-topic-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const topicId = e.target.dataset.topicId;
+                    editTopic(topicId);
+                });
+            });
+
+            // Sil butonlarına olay dinleyicisi ekle
+            document.querySelectorAll('.delete-topic-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const topicId = e.target.dataset.topicId;
+                    showConfirmationModal("Konuyu Sil", "Bu konuyu silmek istediğinizden emin misiniz?", () => {
+                        deleteTopic(topicId);
+                        hideConfirmationModal();
+                    });
+                });
+            });
+            renderPagination(totalPages); // Sayfa sayısını pagination'a gönder
+        }
+
+        // Sayfalama kontrollerini render etme
+        function renderPagination(totalPages) {
+            if (!paginationControls) return;
+
+            paginationControls.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.className = `px-4 py-2 rounded-md font-bold transition duration-300 ${currentPage === i ? 'bg-[#7C3D1D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+                button.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTopics(); // Bu, yeniden filtreleme ve sayfalama yapacak
+                });
+                paginationControls.appendChild(button);
+            }
+        }
+
+        // Yeni konu modalını göster
+        function showNewTopicModal() {
+            isEditingTopic = false;
+            editingTopicId = null;
+            modalTitle.textContent = "Yeni Konu Oluştur";
+            // Formu temizle
+            nameInput.value = '';
+            surnameInput.value = '';
+            topicTitleInput.value = '';
+            tagsInput.value = ''; // Etiket alanını temizle
+            topicContentInput.value = '';
+            newTopicModal.classList.remove('hidden');
+        }
+
+        // Konu düzenleme modalını göster
+        function editTopic(topicId) {
+            const topicToEdit = topics.find(t => t.id === topicId);
+            if (!topicToEdit) {
+                showNotification("Konu bulunamadı.", 2000);
+                return;
+            }
+
+            isEditingTopic = true;
+            editingTopicId = topicId;
+            modalTitle.textContent = "Konuyu Düzenle";
+
+            nameInput.value = topicToEdit.name;
+            surnameInput.value = topicToEdit.surname;
+            topicTitleInput.value = topicToEdit.title;
+            tagsInput.value = topicToEdit.tags ? topicToEdit.tags.join(', ') : ''; // Etiketleri virgülle ayrılmış string olarak göster
+            topicContentInput.value = topicToEdit.content;
+
+            newTopicModal.classList.remove('hidden');
+        }
+
+        // Yeni konu modalını gizle
+        function hideNewTopicModal() {
+            newTopicModal.classList.add('hidden');
+            // Formu temizle ve düzenleme durumunu sıfırla
+            nameInput.value = '';
+            surnameInput.value = '';
+            topicTitleInput.value = '';
+            tagsInput.value = ''; // Etiket alanını temizle
+            topicContentInput.value = '';
+            isEditingTopic = false;
+            editingTopicId = null;
+        }
+
+        // Yeni konu gönderme veya düzenleme işlemi (localStorage'a ekle/güncelle)
+        async function handleSubmitTopic() {
+            const name = nameInput.value.trim();
+            const surname = surnameInput.value.trim();
+            const title = topicTitleInput.value.trim();
+            const content = topicContentInput.value.trim();
+            const tags = tagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0); // Etiketleri diziye dönüştür
+
+            if (!name || !surname || !title || !content) {
+                showNotification("Lütfen tüm alanları doldurun.");
+                return;
+            }
+
+            if (isEditingTopic && editingTopicId) {
+                // Konuyu güncelle
+                topics = topics.map(topic =>
+                    topic.id === editingTopicId ? { ...topic, name, surname, title, content, tags } : topic
+                );
+                showNotification("Konu başarıyla güncellendi!");
+            } else {
+                // Yeni konu ekle
+                const newTopic = {
+                    id: String(nextTopicId++), // Yeni ID ata
+                    name,
+                    surname,
+                    title,
+                    content,
+                    tags, // Etiketleri ekle
+                    timestamp: new Date().toISOString() // ISO formatında tarih ve saat
+                };
+                topics.unshift(newTopic); // Yeni konuları en üste ekle
+                showNotification("Konu başarıyla oluşturuldu!");
+            }
+            saveTopicsToLocalStorage(); // Değişiklikleri kaydet
+            hideNewTopicModal();
+            currentPage = 1; // İşlem sonrası ilk sayfaya dön
+            renderTopics(); // Konuları yeniden render et
+        }
+
+        // Konu silme işlemi (localStorage'dan sil)
+        async function deleteTopic(topicId) {
+            topics = topics.filter(topic => topic.id !== topicId);
+            saveTopicsToLocalStorage(); // Değişiklikleri kaydet
+            showNotification("Konu başarıyla silindi!");
+            renderTopics(); // Konuları yeniden render et
+        }
+
+        // DOM yüklendiğinde başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            forumTopicsList = document.getElementById('forumTopicsList');
+            paginationControls = document.getElementById('paginationControls');
+            newTopicBtn = document.getElementById('newTopicBtn');
+            newTopicModal = document.getElementById('newTopicModal');
+            closeNewTopicModalBtn = document.getElementById('closeNewTopicModalBtn');
+            nameInput = document.getElementById('nameInput');
+            surnameInput = document.getElementById('surnameInput');
+            topicTitleInput = document.getElementById('topicTitleInput');
+            tagsInput = document.getElementById('tagsInput'); // Etiket giriş alanı
+            topicContentInput = document.getElementById('topicContentInput');
+            submitTopicBtn = document.getElementById('submitTopicBtn');
+            cancelNewTopicBtn = document.getElementById('cancelNewTopicBtn');
+            customNotificationElement = document.getElementById('customNotification');
+            // currentUserIdDisplay kaldırıldı
+            searchQueryInput = document.getElementById('searchQueryInput'); // Arama kutusu
+            modalTitle = document.getElementById('modalTitle'); // Modal başlığı
+
+            confirmationModal = document.getElementById('confirmationModal');
+            confirmationModalTitle = document.getElementById('confirmationModalTitle');
+            confirmationModalMessage = document.getElementById('confirmationModalMessage');
+            confirmActionBtn = document.getElementById('confirmActionBtn');
+            cancelActionBtn = document.getElementById('cancelActionBtn');
+
+            // Olay dinleyicileri
+            newTopicBtn.addEventListener('click', showNewTopicModal);
+            closeNewTopicModalBtn.addEventListener('click', hideNewTopicModal);
+            cancelNewTopicBtn.addEventListener('click', hideNewTopicModal);
+            submitTopicBtn.addEventListener('click', handleSubmitTopic);
+
+            // Arama kutusu için olay dinleyicisi
+            searchQueryInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                currentPage = 1; // Arama yapıldığında ilk sayfaya dön
+                renderTopics(); // Konuları yeniden render et
+            });
+
+            // Onay Modalı Olay Dinleyicileri
+            confirmActionBtn.addEventListener('click', () => {
+                if (currentConfirmationCallback) {
+                    currentConfirmationCallback();
+                }
+            });
+            cancelActionBtn.addEventListener('click', hideConfirmationModal);
+
+            // Uygulama yüklendiğinde konuları localStorage'dan yükle
+            loadTopicsFromLocalStorage();
+        });
+    </script>
+</body>
+</html>
