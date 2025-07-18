@@ -92,6 +92,32 @@
             word-wrap: break-word; /* Breaks words if necessary */
             max-height: 100%; /* Ensures it doesn't overflow */
         }
+
+        /* Context Menu Styling */
+        #contextMenu {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            min-width: 150px;
+            padding: 5px 0;
+        }
+        #contextMenu button {
+            display: block;
+            width: 100%;
+            padding: 8px 15px;
+            text-align: left;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #333;
+        }
+        #contextMenu button:hover {
+            background-color: #f0f0f0;
+        }
     </style>
     <script>
         // Varsayılan başlangıç dosyaları
@@ -103,6 +129,7 @@
         let files = []; // Başlangıçta boş, localStorage'dan yüklenecek veya varsayılanlar kullanılacak
         let selectedFileId = null;
         let nextFileId = 1;
+        let contextMenuTargetFileId = null; // New: To store the ID of the file/folder right-clicked
 
         // History for Undo/Redo
         let undoStack = [];
@@ -119,6 +146,9 @@
         let customNotificationElement; // Custom notification element
         let simulationContainerElement; // New element for simulation output
         let lineNumbersElement; // New element for line numbers
+        let contextMenuElement; // New: Context menu element
+        let contextMenuDeleteBtn; // New: Context menu delete button
+        let contextMenuRenameBtn; // New: Context menu rename button
 
         let addFileBtn;
         let addFolderBtn;
@@ -453,15 +483,21 @@
             return newFolder;
         }
 
-        function deleteFile() {
-            if (!selectedFileId) {
+        function deleteFile(fileIdToDelete = null) { // Updated to accept fileId
+            const targetId = fileIdToDelete || selectedFileId;
+            if (!targetId) {
                 showNotification("Lütfen silmek için bir dosya seçin.");
                 return;
             }
 
-            const selectedFile = files.find(f => f.id === selectedFileId);
+            const selectedFile = files.find(f => f.id === targetId);
+            if (!selectedFile) {
+                showNotification("Dosya bulunamadı.");
+                return;
+            }
+
             showConfirmationModal("Dosyayı Sil", `"${selectedFile.name}" dosyasını silmek istediğinizden emin misiniz?`, () => {
-                files = files.filter(file => file.id !== selectedFileId && file.parentId !== selectedFileId);
+                files = files.filter(file => file.id !== targetId && file.parentId !== targetId); // Also remove children if it's a folder
                 files.sort((a, b) => {
                     if (a.parentId === null && b.parentId !== null) return -1;
                     if (a.parentId !== null && b.parentId === null) return 1;
@@ -607,24 +643,30 @@
             }
         }
 
-        function handleRenameClick() {
-            if (!selectedFileId) {
+        function handleRenameClick(fileIdToRename = null) { // Updated to accept fileId
+            const targetId = fileIdToRename || selectedFileId;
+            if (!targetId) {
                 showNotification("Lütfen yeniden adlandırmak için bir dosya veya klasör seçin.");
                 return;
             }
-            const selectedFile = files.find(f => f.id === selectedFileId);
+            const selectedFile = files.find(f => f.id === targetId);
+            if (!selectedFile) {
+                showNotification("Dosya bulunamadı.");
+                return;
+            }
             newFileNameInputModal.value = selectedFile.name;
             renameModal.classList.remove('hidden');
         }
 
         function handleRenameConfirm() {
             const newName = newFileNameInputModal.value.trim();
-            if (!selectedFileId || !newName) {
+            const targetId = contextMenuTargetFileId || selectedFileId; // Use context menu target if available, otherwise selected file
+            if (!targetId || !newName) {
                 showNotification("Lütfen geçerli bir dosya adı girin.");
                 return;
             }
 
-            const selectedFile = files.find(f => f.id === selectedFileId);
+            const selectedFile = files.find(f => f.id === targetId);
             const oldName = selectedFile.name;
 
             if (newName === oldName) {
@@ -632,14 +674,14 @@
                 return;
             }
 
-            const nameExists = files.some(file => file.id !== selectedFileId && file.name === newName && file.parentId === selectedFile.parentId);
+            const nameExists = files.some(file => file.id !== targetId && file.name === newName && file.parentId === selectedFile.parentId);
             if (nameExists) {
                 showNotification(`"${newName}" adında bir dosya veya klasör zaten mevcut.`);
                 return;
             }
 
             files = files.map(file =>
-                file.id === selectedFileId ? { ...file, name: newName } : file
+                file.id === targetId ? { ...file, name: newName } : file
             );
             files.sort((a, b) => {
                 if (a.parentId === null && b.parentId !== null) return -1;
@@ -942,6 +984,10 @@
             customNotificationElement = document.getElementById('customNotification');
             simulationContainerElement = document.getElementById('simulationContainer');
             lineNumbersElement = document.getElementById('lineNumbers'); // Yeni satır numaraları elementi
+            contextMenuElement = document.getElementById('contextMenu'); // New: Context menu element
+            contextMenuDeleteBtn = document.getElementById('contextMenuDeleteBtn'); // New: Context menu delete button
+            contextMenuRenameBtn = document.getElementById('contextMenuRenameBtn'); // New: Context menu rename button
+
 
             addFileBtn = document.getElementById('addFileBtn');
             addFolderBtn = document.getElementById('addFolderBtn');
@@ -978,7 +1024,7 @@
             cancelActionBtn = document.getElementById('cancelActionBtn');
 
             // Elementlerin varlığını kontrol et
-            if (!fileListElement || !fileContentElement || !selectedFileNameElement || !folderContentDisplayElement || !folderChildrenListElement || !mediaPlayerDisplayElement || !customNotificationElement || !simulationContainerElement || !lineNumbersElement || !addFileBtn || !addFolderBtn || !deleteFileBtn || !clearFileContentBtn || !saveFileBtn || !saveAsFileBtn || !saveProjectBtn || !renameFileBtn || !resetProjectBtn || !importFileBtn || !importFileInput || !runCodeBtn || !undoBtn || !redoBtn || !saveAsModal || !closeSaveAsModalBtn || !saveAsFileNameInput || !confirmSaveAsBtn || !cancelSaveAsBtn || !renameModal || !closeRenameModalBtn || !newFileNameInputModal || !confirmRenameBtn || !cancelRenameBtn || !confirmationModal || !confirmationModalTitle || !confirmationModalMessage || !confirmActionBtn || !cancelActionBtn) {
+            if (!fileListElement || !fileContentElement || !selectedFileNameElement || !folderContentDisplayElement || !folderChildrenListElement || !mediaPlayerDisplayElement || !customNotificationElement || !simulationContainerElement || !lineNumbersElement || !contextMenuElement || !contextMenuDeleteBtn || !contextMenuRenameBtn || !addFileBtn || !addFolderBtn || !deleteFileBtn || !clearFileContentBtn || !saveFileBtn || !saveAsFileBtn || !saveProjectBtn || !renameFileBtn || !resetProjectBtn || !importFileBtn || !importFileInput || !runCodeBtn || !undoBtn || !redoBtn || !saveAsModal || !closeSaveAsModalBtn || !saveAsFileNameInput || !confirmSaveAsBtn || !cancelSaveAsBtn || !renameModal || !closeRenameModalBtn || !newFileNameInputModal || !confirmRenameBtn || !cancelRenameBtn || !confirmationModal || !confirmationModalTitle || !confirmationModalMessage || !confirmActionBtn || !cancelActionBtn) {
                 console.error("Hata: Gerekli DOM elementlerinden biri veya birkaçı bulunamadı! Sayfa düzgün yüklenemedi.");
                 return; // Eğer elementler yoksa daha fazla ilerleme
             }
@@ -1209,6 +1255,40 @@
                 renderFiles();
                 renderEditor();
                 saveFilesToLocalStorage(); // Save after drag and drop
+            });
+
+            // Context Menu Event Listener for fileListElement
+            fileListElement.addEventListener('contextmenu', (e) => {
+                const listItem = e.target.closest('li[data-file-id]');
+                if (listItem) {
+                    e.preventDefault(); // Prevent default browser context menu
+                    contextMenuTargetFileId = listItem.dataset.fileId; // Store the ID of the right-clicked item
+
+                    // Position the custom context menu
+                    contextMenuElement.style.left = `${e.clientX}px`;
+                    contextMenuElement.style.top = `${e.clientY}px`;
+                    contextMenuElement.classList.remove('hidden');
+                } else {
+                    contextMenuElement.classList.add('hidden'); // Hide if clicked outside a file/folder item
+                }
+            });
+
+            // Hide context menu when clicking anywhere else on the document
+            document.addEventListener('click', (e) => {
+                if (contextMenuElement && !contextMenuElement.contains(e.target)) {
+                    contextMenuElement.classList.add('hidden');
+                }
+            });
+
+            // Context menu button click listeners
+            contextMenuDeleteBtn.addEventListener('click', () => {
+                deleteFile(contextMenuTargetFileId);
+                contextMenuElement.classList.add('hidden');
+            });
+
+            contextMenuRenameBtn.addEventListener('click', () => {
+                handleRenameClick(contextMenuTargetFileId);
+                contextMenuElement.classList.add('hidden');
             });
         });
     </script>
@@ -1558,6 +1638,12 @@
 
         <!-- Custom Notification Element -->
         <div id="customNotification" class="text-center"></div>
+
+        <!-- Context Menu HTML -->
+        <div id="contextMenu" class="hidden">
+            <button id="contextMenuDeleteBtn">Sil</button>
+            <button id="contextMenuRenameBtn">Yeniden Adlandır</button>
+        </div>
 
     </div>
     <!-- Hidden file input for import -->
